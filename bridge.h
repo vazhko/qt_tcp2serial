@@ -23,9 +23,11 @@ public slots:
     void onNewTcpConnectionSlot();
     void acceptErrorServerSlot(QAbstractSocket::SocketError socketError);
     void readyReadTcpSlot();
+    void disconnectedTcpSlot();
 
     void handleSerialErrorSlot(QSerialPort::SerialPortError error);
     void readyReadSerialSlot();
+
 
 signals:
     void finished();

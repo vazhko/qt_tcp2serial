@@ -39,7 +39,28 @@ bool Bridge::start(QString serName, quint32 portNum){
 
 
 QString Bridge::parseMessage(QByteArray mes){
-    return mes.toHex(0);
+
+    if((mes[0] != '\x1') || (mes.length() < 17) || mes[mes.length() - 1] != '\x3') return mes.toHex(0);
+
+    QByteArray cmd = mes.mid(3,1);
+    QByteArray mes0 = mes.mid(4, mes.length() - 10);
+    int pos = mes0.lastIndexOf(4);
+
+    QByteArray err;
+    if (pos > 0){
+        mes0[pos] = ' ';
+        err =  mes0.mid(pos + 1, 6);
+        mes0.truncate(pos + 1);
+    } else {
+        //return mes.toHex(0);
+    }
+
+    QTextCodec *codec = QTextCodec::codecForName("Windows-1251");
+    QString ustring = codec->toUnicode(mes0);
+
+    return cmd.toHex(0) + " " + ustring + err.toHex('|');
+
+    //return mes.toHex(0);
 }
 
 
@@ -50,9 +71,9 @@ void Bridge::acceptErrorServerSlot(QAbstractSocket::SocketError socketError){
 }
 
 void Bridge::onNewTcpConnectionSlot(){
-    socket = server.nextPendingConnection();
-    //srvSocket = new QTcpSocket();
+    socket = server.nextPendingConnection();    
     connect(socket, SIGNAL(readyRead()), this, SLOT(readyReadTcpSlot()));
+    connect(socket, SIGNAL(disconnected()), this, SLOT(disconnectedTcpSlot()));
     qInfo() << "TCP client " << socket->peerAddress().toString().mid(7) << "connected";
 }
 
@@ -63,9 +84,17 @@ void Bridge::readyReadTcpSlot(){
         serial.write(msg);
         qInfo() << "tcp: " << parseMessage(msg);
     } else {
-        qInfo() << "Tcp port isn't opened";
+        qInfo() << "Serial port isn't opened";
         emit finished();
     }
+}
+
+void Bridge::disconnectedTcpSlot(){
+    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
+    qInfo() << "TCP client " << socket->peerAddress().toString().mid(7) << "disconnected";
+
+    if(socket->isOpen()) socket->close();
+    else if(socket != nullptr) socket->deleteLater();
 }
 
 
@@ -81,8 +110,7 @@ void Bridge::readyReadSerialSlot(){
     if(socket->isOpen()) {
         socket->write(msg);
         qInfo() << "ser: " << parseMessage(msg);
-    } else {
-        qInfo() << "Serial port isn't opened";
-        emit finished();
+    } else {        
+        qInfo() << "Tcp port isn't opened";
     }
 }
