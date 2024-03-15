@@ -19,7 +19,7 @@ bool Bridge::start(QString serName, quint32 portNum){
 
 
     serial.setPortName(serName);
-    serial.setBaudRate(9600);
+    serial.setBaudRate(115200);
     serial.setDataBits(QSerialPort::Data8);
     serial.setParity(QSerialPort::NoParity);
     serial.setStopBits(QSerialPort::OneStop);
