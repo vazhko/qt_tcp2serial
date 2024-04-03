@@ -1,6 +1,7 @@
 #include "bridge.h"
 
 #include <QTextCodec>
+#include <QProcess>
 
 Bridge::Bridge(){    
 }
@@ -78,11 +79,16 @@ void Bridge::onNewTcpConnectionSlot(){
 }
 
 void Bridge::readyReadTcpSlot(){
+    static uint32_t cnt = 0;
     QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
     QByteArray msg = socket->readAll();
     if(serial.isOpen()) {
         serial.write(msg);
         qInfo() << "tcp: " << parseMessage(msg);
+        if(++cnt > 10){
+            cnt = 0;
+            QProcess::execute("cmd /c cls");
+        }
     } else {
         qInfo() << "Serial port isn't opened";
         emit finished();
